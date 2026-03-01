@@ -1,0 +1,54 @@
+<resources>
+    <string name="app_name">MyKotlinApp</string>
+
+    <string name="weather_title">מזג האוויר</string>
+    <string name="weather_subtitle">חיפוש עיר ושמירת מועדפים בקלות</string>
+    <string name="city_hint">הכנס שם עיר</string>
+    <string name="search">חיפוש</string>
+    <string name="history">היסטוריה</string>
+    <string name="favorites">מועדפים</string>
+    <string name="add_to_favorites">הוסף למועדפים</string>
+    <string name="weather_icon">אייקון מזג אוויר</string>
+
+    <string name="city_placeholder">עיר</string>
+    <string name="description_placeholder">תיאור</string>
+    <string name="temp_placeholder">0.0°C</string>
+    <string name="feels_like_placeholder">מרגיש כמו 0.0°C</string>
+    <string name="humidity_placeholder">לחות: 0%</string>
+    <string name="wind_placeholder">רוח: 0.0 m/s</string>
+
+    <string name="list_title_placeholder">רשימה</string>
+    <string name="list_empty">אין פריטים עדיין</string>
+
+    <string name="history_title">חיפושים אחרונים</string>
+    <string name="favorites_title">ערים מועדפות</string>
+    <string name="history_item_format">%1$s • %2$s</string>
+
+    <string name="city_country_format">%1$s, %2$s</string>
+    <string name="feels_like_format">מרגיש כמו %1$s</string>
+    <string name="humidity_format">לחות: %1$d%%</string>
+    <string name="wind_format">רוח: %1$s</string>
+    <string name="temp_format">%1$.1f°C</string>
+    <string name="wind_speed_format">%1$.1f m/s</string>
+
+    <string name="error_empty_city">נא להזין שם עיר</string>
+    <string name="error_city_not_found">העיר לא נמצאה. נסו שם אחר.</string>
+    <string name="error_timeout">הבקשה נכשלה בגלל זמן המתנה. נסו שוב.</string>
+    <string name="error_server_code">שגיאת שרת (%1$d). נסו שוב מאוחר יותר.</string>
+    <string name="error_cannot_reach_server">לא ניתן להגיע לשרת. האם הוא פועל?</string>
+    <string name="error_server_not_found">השרת לא נמצא. בדקו את החיבור.</string>
+    <string name="error_unexpected">שגיאה לא צפויה: %1$s</string>
+
+    <string name="favorite_added">%1$s נוסף למועדפים</string>
+    <string name="favorite_exists">%1$s כבר במועדפים</string>
+    <string name="favorite_removed">%1$s הוסר מהמועדפים</string>
+
+    <!-- Additional strings for in-screen lists -->
+    <string name="recent_searches">ערים אחרונות</string>
+    <string name="favorite_cities">ערים מועדפות</string>
+    <string name="delete">מחק</string>
+    <string name="remove_favorite">הסר מהמועדפים</string>
+    <string name="no_history">אין חיפושים אחרונים</string>
+    <string name="no_favorites">אין ערים מועדפות</string>
+    <string name="timestamp_placeholder">00:00 00/00</string>
+</resources>

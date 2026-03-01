@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material 3 Primary colors - Light Mode -->
+    <color name="primary">#006ECE</color>
+    <color name="primary_light">#4A9FFF</color>
+    <color name="primary_dark">#005BA8</color>
+    <color name="on_primary">#FFFFFF</color>
+
+    <!-- Material 3 Secondary colors -->
+    <color name="secondary">#565E71</color>
+    <color name="on_secondary">#FFFFFF</color>
+
+    <!-- Text colors - WCAG AAA compliant -->
+    <color name="text_primary">#1A1C1E</color>
+    <color name="text_secondary">#49454E</color>
+    <color name="text_disabled">#B3B1B6</color>
+    <color name="text_on_primary">#FFFFFF</color>
+
+    <!-- Background colors -->
+    <color name="background">#FFFFFF</color>
+    <color name="surface">#FFFBFE</color>
+    <color name="card_background">#FFFBFE</color>
+    <color name="on_surface">#1A1C1E</color>
+
+    <!-- Status colors with high contrast -->
+    <color name="error">#B3261E</color>
+    <color name="error_light">#F9DEDC</color>
+    <color name="error_text">#8C0E0E</color>
+    <color name="on_error">#FFFFFF</color>
+    <color name="success">#2E7D32</color>
+    <color name="on_success">#FFFFFF</color>
+
+    <!-- Outline and divider -->
+    <color name="divider">#CAC4CF</color>
+    <color name="outline">#79747E</color>
+    <color name="hint">#79747E</color>
+    <color name="link">#006ECE</color>
+
+    <!-- Legacy -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>
