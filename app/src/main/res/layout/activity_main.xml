@@ -37,6 +37,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="בדוק מזג אוויר"
-        android:layout_marginTop="16dp"/>
+        android:layout_marginTop="16dp"
+        android:visibility="gone"/>
+
+    <Button
+        android:id="@+id/logoutButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="התנתק"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"/>
 
 </LinearLayout>

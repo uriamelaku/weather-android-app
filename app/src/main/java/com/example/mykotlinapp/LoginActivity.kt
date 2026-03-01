@@ -16,6 +16,10 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
     private val TAG = "LoginActivity"
 
+    private val prefs by lazy {
+        getSharedPreferences("app_prefs", MODE_PRIVATE)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -41,14 +45,26 @@ class LoginActivity : AppCompatActivity() {
                     Log.d(TAG, "Calling API...")
                     val res = ApiClient.api.login(LoginRequest(username, password))
                     Log.d(TAG, "API response: ${res.message}")
+                    Log.d(TAG, "Token received: ${res.token.take(20)}...")
 
                     withContext(Dispatchers.Main) {
+                        // שמירת מצב התחברות וטוקן JWT
+                        prefs.edit().apply {
+                            putBoolean("is_logged_in", true)
+                            putString("username", username)
+                            putString("auth_token", res.token)  // ✅ Store JWT token
+                            apply()
+                        }
+
                         Toast.makeText(
                             this@LoginActivity,
                             "✅ התחברות הצליחה: ${res.message}",
                             Toast.LENGTH_LONG
                         ).show()
-                        val intent = Intent(this@LoginActivity, WeatherActivity::class.java)
+
+                        // חזרה למסך הבית
+                        val intent = Intent(this@LoginActivity, HomeActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
                         startActivity(intent)
                         finish()
                     }

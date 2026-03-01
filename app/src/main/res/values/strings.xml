@@ -38,6 +38,7 @@
     <string name="error_cannot_reach_server">לא ניתן להגיע לשרת. האם הוא פועל?</string>
     <string name="error_server_not_found">השרת לא נמצא. בדקו את החיבור.</string>
     <string name="error_unexpected">שגיאה לא צפויה: %1$s</string>
+    <string name="error_session_expired">תוקף ההתחברות פג. התחברו שוב בבקשה.</string>
 
     <string name="favorite_added">%1$s נוסף למועדפים</string>
     <string name="favorite_exists">%1$s כבר במועדפים</string>
@@ -51,4 +52,30 @@
     <string name="no_history">אין חיפושים אחרונים</string>
     <string name="no_favorites">אין ערים מועדפות</string>
     <string name="timestamp_placeholder">00:00 00/00</string>
+
+    <!-- Weather descriptions in Hebrew -->
+    <string name="weather_clear_sky">שמיים בהירים</string>
+    <string name="weather_few_clouds">מעונן חלקית</string>
+    <string name="weather_scattered_clouds">עננים מפוזרים</string>
+    <string name="weather_broken_clouds">מעונן</string>
+    <string name="weather_overcast_clouds">מעונן מאוד</string>
+    <string name="weather_shower_rain">ממטרי גשם</string>
+    <string name="weather_rain">גשם</string>
+    <string name="weather_light_rain">גשם קל</string>
+    <string name="weather_moderate_rain">גשם בינוני</string>
+    <string name="weather_heavy_rain">גשם כבד</string>
+    <string name="weather_thunderstorm">סופת רעמים</string>
+    <string name="weather_snow">שלג</string>
+    <string name="weather_light_snow">שלג קל</string>
+    <string name="weather_heavy_snow">שלג כבד</string>
+    <string name="weather_mist">ערפל</string>
+    <string name="weather_fog">ערפל כבד</string>
+    <string name="weather_haze">אובך</string>
+    <string name="weather_smoke">עשן</string>
+    <string name="weather_dust">אבק</string>
+    <string name="weather_sand">חול</string>
+    <string name="weather_tornado">טורנדו</string>
+    <string name="weather_clouds">עננים</string>
+    <string name="weather_drizzle">טפטוף</string>
+    <string name="weather_unknown">תנאי מזג אוויר</string>
 </resources>

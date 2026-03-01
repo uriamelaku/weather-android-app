@@ -1,5 +1,6 @@
 package com.example.mykotlinapp
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -28,6 +29,10 @@ class WeatherActivity : AppCompatActivity() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
     }
 
+    private val appPrefs by lazy {
+        getSharedPreferences("app_prefs", MODE_PRIVATE)
+    }
+
     private var currentWeather: WeatherResponse? = null
 
     private lateinit var historyAdapter: HistoryAdapter
@@ -35,6 +40,16 @@ class WeatherActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // בדיקת הרשאה - אם המשתמש לא מחובר, חזרה למסך הבית
+        if (!appPrefs.getBoolean("is_logged_in", false)) {
+            Toast.makeText(this, "עליך להתחבר תחילה", Toast.LENGTH_LONG).show()
+            val intent = Intent(this, HomeActivity::class.java)
+            startActivity(intent)
+            finish()
+            return
+        }
+
         binding = ActivityWeatherBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -102,15 +117,7 @@ class WeatherActivity : AppCompatActivity() {
                 val favorites = loadFavorites().toMutableList()
                 if (position >= 0 && position < favorites.size) {
                     val removedCity = favorites[position]
-                    favorites.removeAt(position)
-                    saveFavorites(favorites)
-                    favoritesAdapter.removeItem(position)
-                    Toast.makeText(
-                        this,
-                        getString(R.string.favorite_removed, removedCity),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    updateFavoritesDisplay()
+                    removeFavoriteFromServer(position, removedCity)
                 }
             }
         )
@@ -170,6 +177,11 @@ class WeatherActivity : AppCompatActivity() {
             } catch (e: retrofit2.HttpException) {
                 withContext(Dispatchers.Main) {
                     val message = when (e.code()) {
+                        401 -> {
+                            // Token expired or invalid - redirect to login
+                            logout()
+                            getString(R.string.error_session_expired)
+                        }
                         404 -> getString(R.string.error_city_not_found)
                         408 -> getString(R.string.error_timeout)
                         else -> getString(R.string.error_server_code, e.code())
@@ -211,7 +223,7 @@ class WeatherActivity : AppCompatActivity() {
         binding.addFavoriteButton.isEnabled = true
 
         binding.cityText.text = getString(R.string.city_country_format, weather.city, weather.country)
-        binding.descriptionText.text = weather.description
+        binding.descriptionText.text = translateWeatherDescription(weather.description)
         binding.tempText.text = formatTemp(weather.temp)
         binding.feelsLikeText.text = getString(R.string.feels_like_format, formatTemp(weather.feelsLike))
         binding.humidityText.text = getString(R.string.humidity_format, weather.humidity)
@@ -230,6 +242,52 @@ class WeatherActivity : AppCompatActivity() {
         saveHistory(history)
     }
 
+    /**
+     * Fetch history from server (supports server v2.0.0+)
+     * Falls back to local storage if server call fails
+     */
+    private fun fetchHistoryFromServer() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = ApiClient.api.getHistory()
+                val historyItems = response.history.map {
+                    SearchHistoryItem(it.city, it.timestamp)
+                }
+                withContext(Dispatchers.Main) {
+                    historyAdapter.updateItems(historyItems)
+                    updateHistoryDisplay()
+                }
+            } catch (e: retrofit2.HttpException) {
+                if (e.code() == 401) {
+                    withContext(Dispatchers.Main) { logout() }
+                }
+                // Fallback to local storage
+            } catch (e: Exception) {
+                // Fallback to local storage on any error
+            }
+        }
+    }
+
+    /**
+     * Clear history from server
+     */
+    private fun clearHistoryFromServer() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                ApiClient.api.clearHistory()
+                withContext(Dispatchers.Main) {
+                    updateHistoryDisplay()
+                }
+            } catch (e: retrofit2.HttpException) {
+                if (e.code() == 401) {
+                    withContext(Dispatchers.Main) { logout() }
+                }
+            } catch (e: Exception) {
+                // Ignore errors, local storage will persist
+            }
+        }
+    }
+
     private fun addCurrentToFavorites() {
         val city = currentWeather?.city ?: return
         val favorites = loadFavorites().toMutableList()
@@ -239,10 +297,117 @@ class WeatherActivity : AppCompatActivity() {
             return
         }
 
-        favorites.add(0, city)
-        saveFavorites(favorites)
-        Toast.makeText(this, getString(R.string.favorite_added, city), Toast.LENGTH_SHORT).show()
-        updateFavoritesDisplay()
+        // Try to add via server first
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = ApiClient.api.addFavorite(AddFavoriteRequest(city))
+                withContext(Dispatchers.Main) {
+                    saveFavorites(response.favorites)
+                    Toast.makeText(this@WeatherActivity, getString(R.string.favorite_added, city), Toast.LENGTH_SHORT).show()
+                    updateFavoritesDisplay()
+                }
+            } catch (e: retrofit2.HttpException) {
+                withContext(Dispatchers.Main) {
+                    when (e.code()) {
+                        401 -> logout()
+                        409 -> Toast.makeText(this@WeatherActivity, getString(R.string.favorite_exists, city), Toast.LENGTH_SHORT).show()
+                        else -> {
+                            // Fallback to local storage
+                            favorites.add(0, city)
+                            saveFavorites(favorites)
+                            Toast.makeText(this@WeatherActivity, getString(R.string.favorite_added, city), Toast.LENGTH_SHORT).show()
+                            updateFavoritesDisplay()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    // Fallback to local storage on error
+                    favorites.add(0, city)
+                    saveFavorites(favorites)
+                    Toast.makeText(this@WeatherActivity, getString(R.string.favorite_added, city), Toast.LENGTH_SHORT).show()
+                    updateFavoritesDisplay()
+                }
+            }
+        }
+    }
+
+    /**
+     * Fetch favorites from server (supports server v2.0.0+)
+     * Falls back to local storage if server call fails
+     */
+    private fun fetchFavoritesFromServer() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = ApiClient.api.getFavorites()
+                withContext(Dispatchers.Main) {
+                    saveFavorites(response.favorites)
+                    favoritesAdapter.updateItems(response.favorites)
+                    updateFavoritesDisplay()
+                }
+            } catch (e: retrofit2.HttpException) {
+                if (e.code() == 401) {
+                    withContext(Dispatchers.Main) { logout() }
+                }
+                // Fallback to local storage
+            } catch (e: Exception) {
+                // Fallback to local storage on any error
+            }
+        }
+    }
+
+    /**
+     * Remove a favorite from server
+     */
+    private fun removeFavoriteFromServer(position: Int, city: String) {
+        val favorites = loadFavorites().toMutableList()
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                ApiClient.api.removeFavorite(city)
+                withContext(Dispatchers.Main) {
+                    favorites.removeAt(position)
+                    saveFavorites(favorites)
+                    favoritesAdapter.removeItem(position)
+                    Toast.makeText(
+                        this@WeatherActivity,
+                        getString(R.string.favorite_removed, city),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    updateFavoritesDisplay()
+                }
+            } catch (e: retrofit2.HttpException) {
+                withContext(Dispatchers.Main) {
+                    if (e.code() == 401) {
+                        logout()
+                    } else {
+                        // Fallback to local removal
+                        favorites.removeAt(position)
+                        saveFavorites(favorites)
+                        favoritesAdapter.removeItem(position)
+                        Toast.makeText(
+                            this@WeatherActivity,
+                            getString(R.string.favorite_removed, city),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        updateFavoritesDisplay()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    // Fallback to local removal on error
+                    favorites.removeAt(position)
+                    saveFavorites(favorites)
+                    favoritesAdapter.removeItem(position)
+                    Toast.makeText(
+                        this@WeatherActivity,
+                        getString(R.string.favorite_removed, city),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    updateFavoritesDisplay()
+                }
+            }
+        }
     }
 
     private fun updateLoading(isLoading: Boolean) {
@@ -259,6 +424,21 @@ class WeatherActivity : AppCompatActivity() {
 
     private fun hideError() {
         binding.errorText.visibility = View.GONE
+    }
+
+    private fun logout() {
+        // Clear login state and token
+        appPrefs.edit().apply {
+            putBoolean("is_logged_in", false)
+            remove("username")
+            remove("auth_token")
+            apply()
+        }
+        // Navigate to home/login
+        val intent = Intent(this, HomeActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+        startActivity(intent)
+        finish()
     }
 
     private fun formatTemp(value: Double): String {
@@ -284,6 +464,49 @@ class WeatherActivity : AppCompatActivity() {
             icon.startsWith("13") -> R.drawable.ic_weather_snow
             icon.startsWith("50") -> R.drawable.ic_weather_mist
             else -> R.drawable.ic_weather_unknown
+        }
+    }
+
+    private fun translateWeatherDescription(description: String): String {
+        val lowerDesc = description.lowercase().trim()
+        return when {
+            // Clear sky
+            lowerDesc.contains("clear") -> getString(R.string.weather_clear_sky)
+
+            // Clouds
+            lowerDesc.contains("few clouds") -> getString(R.string.weather_few_clouds)
+            lowerDesc.contains("scattered clouds") -> getString(R.string.weather_scattered_clouds)
+            lowerDesc.contains("broken clouds") -> getString(R.string.weather_broken_clouds)
+            lowerDesc.contains("overcast") -> getString(R.string.weather_overcast_clouds)
+            lowerDesc.contains("clouds") || lowerDesc.contains("cloudy") -> getString(R.string.weather_clouds)
+
+            // Rain
+            lowerDesc.contains("light rain") -> getString(R.string.weather_light_rain)
+            lowerDesc.contains("moderate rain") -> getString(R.string.weather_moderate_rain)
+            lowerDesc.contains("heavy rain") -> getString(R.string.weather_heavy_rain)
+            lowerDesc.contains("shower") -> getString(R.string.weather_shower_rain)
+            lowerDesc.contains("drizzle") -> getString(R.string.weather_drizzle)
+            lowerDesc.contains("rain") -> getString(R.string.weather_rain)
+
+            // Thunderstorm
+            lowerDesc.contains("thunder") || lowerDesc.contains("storm") -> getString(R.string.weather_thunderstorm)
+
+            // Snow
+            lowerDesc.contains("light snow") -> getString(R.string.weather_light_snow)
+            lowerDesc.contains("heavy snow") -> getString(R.string.weather_heavy_snow)
+            lowerDesc.contains("snow") -> getString(R.string.weather_snow)
+
+            // Atmosphere
+            lowerDesc.contains("mist") -> getString(R.string.weather_mist)
+            lowerDesc.contains("fog") -> getString(R.string.weather_fog)
+            lowerDesc.contains("haze") -> getString(R.string.weather_haze)
+            lowerDesc.contains("smoke") -> getString(R.string.weather_smoke)
+            lowerDesc.contains("dust") -> getString(R.string.weather_dust)
+            lowerDesc.contains("sand") -> getString(R.string.weather_sand)
+            lowerDesc.contains("tornado") -> getString(R.string.weather_tornado)
+
+            // Default
+            else -> getString(R.string.weather_unknown)
         }
     }
 
